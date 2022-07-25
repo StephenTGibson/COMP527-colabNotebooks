@@ -35,7 +35,7 @@ def create2dMeshData(model, xDim, yDim, xMin, xMax, yMin, yMax):
     flattened_uArray = model(flattenedCoords[:,0], flattenedCoords[:,1])
     # reshape solution array into meshgrid shape and convert to numpy
     uArray = torch.reshape(
-        flattened_uArray,(yDim, xDim).detach().numpy())
+        flattened_uArray,(yDim, xDim)).detach().numpy()
 
     # compute residual at all points
     flattened_rArray = model.residual(
