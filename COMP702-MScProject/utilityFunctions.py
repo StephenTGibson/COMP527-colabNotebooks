@@ -2,8 +2,8 @@
 # neural networks
 
 import numpy as np
+import torch
 import matplotlib.pyplot as plt
-from torch import from_numpy, reshape
 
 # create 2d arrays of solution and residual
 # input:
