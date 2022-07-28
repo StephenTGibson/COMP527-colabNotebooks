@@ -5,48 +5,52 @@ import numpy as np
 import torch
 import matplotlib.pyplot as plt
 
-# create 2d arrays of solution and residual
+# create 2d arrays of solution and residual from 1d Burgers PINN
 # input:
-# model to compute solution and residual from 2 inputs only
+# PINN model
 # x and y dimensions of solution space (points at which to compute)
 # min and max extents of x and y axes respectively
+# xArg and yArg, strings 't' or 'x', to indicate which variable to be used 
+# for each direction
+# boolean, whether to compute and return residual
 # output:
 # x and y - 2D numpy arrays and size y*x
 # u, 2D numpy array containing PINN approximated solution for all points
 # within mesh
 # r, 2D numpy array containing computed residual for all points within mesh
-def create2dMeshData(model, xDim, yDim, xMin, xMax, yMin, yMax):
-
+def create2dMeshData_1dBurgers(model, xDim, yDim, xMin, xMax, yMin, yMax, xArg, yArg, residual=True):
     # create np arrays based on input domain extent and dimensions of mesh
     x = np.arange(xMin, xMax, (xMax-xMin)/xDim)
     y = np.arange(yMin, yMax, (yMax-yMin)/yDim)
     # create meshgrid arrays
     xArray, yArray = np.meshgrid(x, y)
-
-    # create empty array to contain all meshgrid points
-    flattenedCoords = np.zeros(((xDim)*(yDim), 2))
-    # add meshgrid points
-    flattenedCoords[:,0] = xArray.flatten()
-    flattenedCoords[:,1] = yArray.flatten()
-    # convert numpy array to pytorch tensor
-    flattenedCoords = torch.from_numpy(flattenedCoords.astype(np.float32))
-
-    # use PINN to approximate solution for all points
-    flattened_uArray = model(flattenedCoords[:,0], flattenedCoords[:,1])
+    # create tensors for model input
+    xTensor = torch.from_numpy(xArray.flatten().astype(np.float32))
+    yTensor = torch.from_numpy(yArray.flatten().astype(np.float32))
+    # argument to tensor mapping
+    argsTensorMapping = {
+        xArg:xTensor,
+        yArg:yTensor,
+        }
+    # approximate solution using PINN
+    # model input: t - x
+    uTensor = model(
+        argsTensorMapping['t'],
+        argsTensorMapping['x'],
+        )
     # reshape solution array into meshgrid shape and convert to numpy
-    uArray = torch.reshape(
-        flattened_uArray,(yDim, xDim)).detach().numpy()
-
-    # compute residual at all points
-    flattened_rArray = model.residual(
-        flattenedCoords[:,0].requires_grad_(),
-        flattenedCoords[:,1].requires_grad_())
+    uArray = torch.reshape(uTensor, (yDim, xDim)).detach().numpy()
+    # check if residual not required
+    if not residual:
+        return xArray, yArray, uArray
+    # otherwise compute residual
+    rTensor = model.residual(
+        argsTensorMapping['t'].requires_grad_(),
+        argsTensorMapping['x'].requires_grad_(),
+        )
     # reshape residual array into meshgrid shape and convert to numpy
-    rArray = torch.reshape(
-        flattened_rArray, (yDim, xDim)).detach().numpy()
-
+    rArray = torch.reshape(rTensor, (yDim, xDim)).detach().numpy()
     return xArray, yArray, uArray, rArray
-
 
 # returns training history plot
 # input:
