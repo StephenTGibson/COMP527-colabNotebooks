@@ -48,33 +48,40 @@ def create2dMeshData(model, xDim, yDim, xMin, xMax, yMin, yMax):
     return xArray, yArray, uArray, rArray
 
 
-# returns training loss plot
+# returns training history plot
 # input:
-# history, numpy array containing loss values - epochs in first dimension
-# lossNamesList, list containing names of loss types as strings for legend
+# history, numpy array - epochs in first dimension
+# variableNamesList, list containing names of variables as strings for legend
 # plotTitle, string
+# yLogAx, boolean indicating whether y (loss) axis uses a log scale
 # insetDetail, boolean indicating whether or not to include inset axis of
 # last quarter of training epochs
+# insetLoc, list indication location of inset ax
+# warning: do not use both log loss ax and inset detail
 # returns: figure
-def trainingLossPlot(history, lossNamesList, plotTitle, insetDetail=True):
+def trainingHistoryPlot(history, variableNamesList, yAxisLabel, plotTitle, yLogAx=True,
+insetDetail=False, insetLoc=[0.5, 0.5, 0.46, 0.42]):
     fig, ax = plt.subplots(figsize=(6,4))
     # plot losses
-    for idx, lossName in enumerate(lossNamesList):
-        ax.plot(history[:,idx], label=lossName)
+    for idx, variableName in enumerate(variableNamesList):
+        ax.plot(history[:,idx], label=variableName)
+    # check for log loss axis
+    if yLogAx:
+        ax.set_yscale('log')
     # add legend
     ax.legend(loc=(1.01, 0.5))
     # label axes
-    ax.set_xlabel('Training epoch')
-    ax.set_ylabel('Loss')
+    ax.set_xlabel('Epoch')
+    ax.set_ylabel(yAxisLabel)
     # figure title
     fig.suptitle(plotTitle, fontsize=16)
 
     if insetDetail:
         # add an insert ax in top right corner
-        axins = ax.inset_axes([0.5, 0.5, 0.46, 0.42])
+        axins = ax.inset_axes(insetLoc)
         # plot losses on insert ax
-        for idx, lossName in enumerate(lossNamesList):
-            axins.plot(history[:,idx], label=lossName)
+        for idx in range(variableNamesList):
+            axins.plot(history[:,idx])
         # set limits of insert ax
         axins.set_xlim(3*history.shape[0]//4, history.shape[0])
         axins.set_ylim(0, history[3*history.shape[0]//4:].max())
@@ -83,4 +90,3 @@ def trainingLossPlot(history, lossNamesList, plotTitle, insetDetail=True):
         # add insert locator lines
         ax.indicate_inset_zoom(axins, edgecolor='black')
     return fig
-
