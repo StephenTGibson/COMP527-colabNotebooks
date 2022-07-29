@@ -16,6 +16,7 @@ class PINN_1D_Burgers(torch.nn.Module):
                  l1_init,
                  l2_init,
                  inverseProblem = False,
+                 verbose = True
                  ):
         super(PINN_1D_Burgers, self).__init__()
         # network structure
@@ -40,6 +41,8 @@ class PINN_1D_Burgers(torch.nn.Module):
         else:
             self.l1 = torch.tensor(l1_init)
             self.l2 = torch.tensor(l2_init)
+        # boolean whether to print update during training
+        self.verbose = verbose
         # define L-BFGS optimiser
         self.optimiser = torch.optim.LBFGS(
             self.parameters(),
@@ -95,7 +98,7 @@ class PINN_1D_Burgers(torch.nn.Module):
                                  axis=0)
 
         # print training progress update (every (2**2)th epoch initially, then every 500th)
-        if (np.log2(self.iterationCount) % 1 == 0 and self.iterationCount < 500) or self.iterationCount % 500 == 0:
+        if self.verbose and ((np.log2(self.iterationCount) % 1 == 0 and self.iterationCount < 500) or self.iterationCount % 500 == 0):
             print(f'Epoch: {self.iterationCount} --- Elapsed time: {(perf_counter()-self.startTime):.2f}s --- Loss: {self.history[-1,0]}')
         return totalLoss
 
