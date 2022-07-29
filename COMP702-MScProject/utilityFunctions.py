@@ -1,5 +1,5 @@
-# contains functions for creating plots for MSc Project phyics informed
-# neural networks
+# contains functions for use with MSc Project:
+# physics informed neural networks
 
 import numpy as np
 import torch

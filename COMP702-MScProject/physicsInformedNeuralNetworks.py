@@ -5,7 +5,7 @@ import numpy as np
 import torch
 from time import perf_counter
 
-# define neural network
+# define physics informed neural network for 1D Burgers' equation
 class PINN_1D_Burgers(torch.nn.Module):
     def __init__(self,
                  hiddenLayers,
@@ -13,8 +13,8 @@ class PINN_1D_Burgers(torch.nn.Module):
                  activationFunction,
                  maxIterations,
                  maxEvaluations,
-                 l1,
-                 l2,
+                 l1_init,
+                 l2_init,
                  inverseProblem = False,
                  ):
         super(PINN_1D_Burgers, self).__init__()
@@ -32,14 +32,14 @@ class PINN_1D_Burgers(torch.nn.Module):
         self.inverseProblem = inverseProblem
         # check if inverse problem
         if self.inverseProblem:
-            # add l1 and l2 as trainable parameters
-            self.l1 = torch.nn.Parameter(torch.tensor(l1))
-            self.l2 = torch.nn.Parameter(torch.tensor(l2))
-            self.lxHistory = np.array([[l1, l2]])
+            # add l1 and l2_exp as trainable parameters
+            self.l1 = torch.nn.Parameter(torch.tensor(l1_init))
+            self.l2_exp = torch.nn.Parameter(torch.tensor(l2_init))
+            self.lxHistory = np.array([[l1_init, np.exp(l2_init)]])
         # otherwise not trainable for forward problem
         else:
-            self.l1 = torch.tensor(l1)
-            self.l2 = torch.tensor(l2)
+            self.l1 = torch.tensor(l1_init)
+            self.l2 = torch.tensor(l2_init)
         # define L-BFGS optimiser
         self.optimiser = torch.optim.LBFGS(
             self.parameters(),
@@ -64,6 +64,9 @@ class PINN_1D_Burgers(torch.nn.Module):
         ut = torch.autograd.grad(u, t, torch.ones_like(u), create_graph=True)[0]
         ux = torch.autograd.grad(u, x, torch.ones_like(u), create_graph=True)[0]
         uxx = torch.autograd.grad(ux, x, torch.ones_like(ux), create_graph=True)[0]
+        # if inverse compute l2 value from natural log of l2
+        if self.inverseProblem:
+            self.l2 = torch.exp(self.l2_exp)
         # compute PDE residual
         return ut + self.l1 * u * ux - self.l2 * uxx
 
